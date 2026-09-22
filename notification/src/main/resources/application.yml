@@ -16,5 +16,18 @@ spring:
           configuration:
             value.deserializer: org.apache.kafka.common.serialization.StringDeserializer
 
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${EMAIL_USERNAME:dummy@gmail.com}
+    password: ${EMAIL_PASSWORD:dummy}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
 server:
-  port: 8084
+  port: 8084

@@ -1,7 +1,7 @@
-spring:
+﻿spring:
   datasource:
     url: jdbc:postgresql://postgres:5432/productdb
-#    url: jdbc:mysql://localhost:3307/embarkx
+#    url: jdbc:mysql://localhost:3307/tejas
     username: ${DB_USER}
     password: ${DB_PASSWORD}
   rabbitmq:

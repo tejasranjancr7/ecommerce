@@ -1,6 +1,8 @@
 package com.ecommerce.notification;
 
 import com.ecommerce.notification.payload.OrderCreatedEvent;
+import com.ecommerce.notification.service.EmailService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
@@ -9,30 +11,17 @@ import java.util.function.Consumer;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class OrderEventConsumer {
-    /*@RabbitListener(queues = "${rabbitmq.queue.name}")
-    public void handleOrderEvent(OrderCreatedEvent orderEvent){
-        System.out.println("Received Order Event: " + orderEvent);
 
-        long orderId = orderEvent.getOrderId();
-        OrderStatus orderStatus = orderEvent.getStatus();
-
-        System.out.println("Order ID: " + orderId);
-        System.out.println("Order Status: " + orderStatus);
-
-        // Update Database
-        // Send Notification
-        // Send Emails
-        // Generate Invoice
-        // Send Seller Notification
-
-    }*/
+    private final EmailService emailService;
 
     @Bean
     public Consumer<OrderCreatedEvent> orderCreated() {
         return event -> {
-            log.info("Received order created event for order: {}", event.getOrderId());
-            log.info("Received order created event for user id: {}", event.getUserId());
+            log.info("Received OrderCreatedEvent — orderId: {}, user: {}, email: {}",
+                    event.getOrderId(), event.getUserName(), event.getUserEmail());
+            emailService.sendOrderConfirmationEmail(event);
         };
     }
 }

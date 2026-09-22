@@ -14,6 +14,8 @@ import java.util.List;
 public class OrderCreatedEvent {
     private Long orderId;
     private String userId;
+    private String userEmail;
+    private String userName;
     private OrderStatus status;
     private List<OrderItemDTO> items;
     private BigDecimal totalAmount;

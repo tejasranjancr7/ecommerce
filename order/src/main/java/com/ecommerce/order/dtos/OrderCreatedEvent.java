@@ -1,6 +1,5 @@
 package com.ecommerce.order.dtos;
 
-import com.ecommerce.order.models.OrderItem;
 import com.ecommerce.order.models.OrderStatus;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -16,6 +15,8 @@ import java.util.List;
 public class OrderCreatedEvent {
     private Long orderId;
     private String userId;
+    private String userEmail;
+    private String userName;
     private OrderStatus status;
     private List<OrderItemDTO> items;
     private BigDecimal totalAmount;
