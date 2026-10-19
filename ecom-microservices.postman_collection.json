@@ -22,7 +22,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\r\n    \"firstName\": \"John2\",\r\n    \"lastName\": \"Doe2\",\r\n    \"email\": \"john@gmail.com\",\r\n    \"phone\": \"335128571\",\r\n    \"address\": {\r\n        \"street\": \"123 Main St\",\r\n        \"city\": \"New York\",\r\n        \"state\": \"NY\",\r\n        \"country\": \"USA\",\r\n        \"zipcode\": \"10001\"\r\n    }\r\n}",
+									"raw": "{\r\n    \"firstName\": \"John2\",\r\n    \"lastName\": \"Doe2\",\r\n    \"email\": \"user@example.com\",\r\n    \"phone\": \"335128571\",\r\n    \"address\": {\r\n        \"street\": \"123 Main St\",\r\n        \"city\": \"New York\",\r\n        \"state\": \"NY\",\r\n        \"country\": \"USA\",\r\n        \"zipcode\": \"10001\"\r\n    }\r\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -54,7 +54,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\r\n    \"firstName\": \"John Updated\",\r\n    \"lastName\": \"Doe Updated\",\r\n    \"email\": \"john@gmail.com\",\r\n    \"phone\": \"335128571\",\r\n    \"address\": {\r\n        \"street\": \"123 Main St\",\r\n        \"city\": \"New York\",\r\n        \"state\": \"NY\",\r\n        \"country\": \"USA\",\r\n        \"zipcode\": \"10001\"\r\n    }\r\n}",
+									"raw": "{\r\n    \"firstName\": \"John Updated\",\r\n    \"lastName\": \"Doe Updated\",\r\n    \"email\": \"user@example.com\",\r\n    \"phone\": \"335128571\",\r\n    \"address\": {\r\n        \"street\": \"123 Main St\",\r\n        \"city\": \"New York\",\r\n        \"state\": \"NY\",\r\n        \"country\": \"USA\",\r\n        \"zipcode\": \"10001\"\r\n    }\r\n}",
 									"options": {
 										"raw": {
 											"language": "json"

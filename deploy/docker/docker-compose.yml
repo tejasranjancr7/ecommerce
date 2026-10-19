@@ -41,6 +41,7 @@ services:
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      JAVA_OPTS_KC_HEAP: "-Xms128m -Xmx256m"
 #      PROXY_ADDRESS_FORWARDING: "true"
 #      KEYCLOAK_FRONTEND_URL: "http://localhost:8443"
     command: [ "start-dev" ]
@@ -64,6 +65,7 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+      KAFKA_HEAP_OPTS: "-Xmx128m -Xms64m"
     networks:
       - backend
 
@@ -77,6 +79,7 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_HEAP_OPTS: "-Xmx256m -Xms128m"
     depends_on:
       - zookeeper
     networks:
@@ -113,6 +116,7 @@ services:
     networks:
       - backend
     environment:
+      - JAVA_TOOL_OPTIONS=-Xms64m -Xmx256m -XX:+UseSerialGC
       - SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS=/config
       - RABBITMQ_HOST=${RABBITMQ_HOST}
       - RABBITMQ_PORT=${RABBITMQ_PORT}
@@ -132,6 +136,8 @@ services:
     container_name: eureka
     ports:
       - 8761:8761
+    environment:
+      - JAVA_TOOL_OPTIONS=-Xms64m -Xmx256m -XX:+UseSerialGC
     networks:
       - backend
     healthcheck:
@@ -147,6 +153,7 @@ services:
     ports:
       - 8080:8080
     environment:
+      - JAVA_TOOL_OPTIONS=-Xms64m -Xmx256m -XX:+UseSerialGC
       - SPRING_PROFILES_ACTIVE=docker
       - ZIPKIN_URL=${ZIPKIN_URL}
     depends_on:
@@ -166,6 +173,7 @@ services:
     ports:
       - 8082:8082
     environment:
+      - JAVA_TOOL_OPTIONS=-Xms64m -Xmx256m -XX:+UseSerialGC
       - SPRING_PROFILES_ACTIVE=docker
       - MONGO_URI=${MONGO_URI}
       - RABBITMQ_HOST=${RABBITMQ_HOST}
@@ -190,6 +198,7 @@ services:
     ports:
       - 8081:8081
     environment:
+      - JAVA_TOOL_OPTIONS=-Xms64m -Xmx256m -XX:+UseSerialGC
       - SPRING_PROFILES_ACTIVE=docker
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
@@ -215,6 +224,7 @@ services:
     ports:
       - 8083:8083
     environment:
+      - JAVA_TOOL_OPTIONS=-Xms64m -Xmx256m -XX:+UseSerialGC
       - SPRING_PROFILES_ACTIVE=docker
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
@@ -240,6 +250,7 @@ services:
     ports:
       - 8084:8084
     environment:
+      - JAVA_TOOL_OPTIONS=-Xms64m -Xmx256m -XX:+UseSerialGC
       - SPRING_PROFILES_ACTIVE=docker
       - EMAIL_USERNAME=${EMAIL_USERNAME}
       - EMAIL_PASSWORD=${EMAIL_PASSWORD}

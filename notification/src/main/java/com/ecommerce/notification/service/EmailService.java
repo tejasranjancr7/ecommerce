@@ -97,9 +97,15 @@ public class EmailService {
             }
         }
 
-        BigDecimal finalTotal = (calculatedTotal.compareTo(BigDecimal.ZERO) > 0)
+        BigDecimal subTotalAmount = (calculatedTotal.compareTo(BigDecimal.ZERO) > 0)
                 ? calculatedTotal
                 : (event.getTotalAmount() != null ? event.getTotalAmount() : BigDecimal.ZERO);
+        boolean isFreeShipping = subTotalAmount.compareTo(BigDecimal.valueOf(499)) >= 0 || subTotalAmount.compareTo(BigDecimal.ZERO) == 0;
+        BigDecimal shippingFee = isFreeShipping ? BigDecimal.ZERO : BigDecimal.valueOf(49);
+        BigDecimal grandTotal = subTotalAmount.add(shippingFee);
+        String shippingDisplay = isFreeShipping
+                ? "<span style=\"color:#16a34a; font-weight:600;\">FREE</span>"
+                : "<span style=\"color:#b45309; font-weight:700;\">₹49.00</span>";
 
         return """
                 <!DOCTYPE html>
@@ -224,7 +230,7 @@ public class EmailService {
                                                         </tr>
                                                         <tr>
                                                             <td style="color:#6b7280; font-size:14px; padding-bottom:8px;">Shipping</td>
-                                                            <td style="color:#16a34a; font-size:14px; text-align:right; padding-bottom:8px; font-weight:600;">FREE</td>
+                                                            <td style="font-size:14px; text-align:right; padding-bottom:8px;">%s</td>
                                                         </tr>
                                                         <tr style="border-top: 2px solid #e5e7eb;">
                                                             <td style="color:#111827; font-size:16px; font-weight:700; padding-top:10px;">Total</td>
@@ -264,8 +270,9 @@ public class EmailService {
                 customerName,
                 customerEmail,
                 itemRows.toString(),
-                finalTotal,
-                finalTotal
+                subTotalAmount,
+                shippingDisplay,
+                grandTotal
         );
     }
 }

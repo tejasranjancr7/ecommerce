@@ -97,13 +97,27 @@ public class InvoiceService {
             
             document.add(table);
             
-            // Total Amount
-            BigDecimal finalTotal = (calculatedTotal.compareTo(BigDecimal.ZERO) > 0)
+            // Subtotal, Shipping & Total Amount
+            BigDecimal subTotalAmount = (calculatedTotal.compareTo(BigDecimal.ZERO) > 0)
                     ? calculatedTotal
                     : (event.getTotalAmount() != null ? event.getTotalAmount() : BigDecimal.ZERO);
-            Paragraph total = new Paragraph("Total Amount: INR " + finalTotal, headerFont);
+            boolean isFreeShipping = subTotalAmount.compareTo(BigDecimal.valueOf(499)) >= 0 || subTotalAmount.compareTo(BigDecimal.ZERO) == 0;
+            BigDecimal shippingFee = isFreeShipping ? BigDecimal.ZERO : BigDecimal.valueOf(49);
+            BigDecimal grandTotal = subTotalAmount.add(shippingFee);
+
+            Paragraph subtotalPara = new Paragraph("Subtotal: INR " + subTotalAmount, normalFont);
+            subtotalPara.setAlignment(Paragraph.ALIGN_RIGHT);
+            subtotalPara.setSpacingBefore(15);
+            document.add(subtotalPara);
+
+            String shippingText = isFreeShipping ? "Shipping: FREE (Orders >= INR 499)" : "Shipping: INR 49.00";
+            Paragraph shippingPara = new Paragraph(shippingText, normalFont);
+            shippingPara.setAlignment(Paragraph.ALIGN_RIGHT);
+            document.add(shippingPara);
+
+            Paragraph total = new Paragraph("Total Amount: INR " + grandTotal, headerFont);
             total.setAlignment(Paragraph.ALIGN_RIGHT);
-            total.setSpacingBefore(20);
+            total.setSpacingBefore(5);
             document.add(total);
 
             document.close();
