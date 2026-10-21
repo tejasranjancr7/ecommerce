@@ -82,7 +82,7 @@ export const CheckoutModal: React.FC = () => {
             </div>
 
             <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#111827' }}>
-              {currentUser?.firstName} {currentUser?.lastName}
+              {[currentUser?.firstName, currentUser?.lastName].filter(Boolean).join(' ') || 'Customer'}
             </div>
             <div style={{ fontSize: '0.84rem', color: '#475569', lineHeight: 1.4 }}>
               {currentUser?.address?.street}, {currentUser?.address?.city}, {currentUser?.address?.state} - {currentUser?.address?.zipcode}, {currentUser?.address?.country}

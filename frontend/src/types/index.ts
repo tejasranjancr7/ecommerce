@@ -81,7 +81,7 @@ export interface Order {
   createdAt: string;
 }
 
-export type BackendMode = 'live' | 'mock';
+export type BackendMode = 'live';
 
 export interface ToastMessage {
   id: string;

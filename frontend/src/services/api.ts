@@ -18,13 +18,7 @@ class LocalStoreManager {
     if (!raw) return {};
     try {
       const sessions = JSON.parse(raw);
-      for (const key of Object.keys(sessions)) {
-        if (key !== 'tejasranjansingh007@gmail.com' && key !== 'admin' && key !== 'joe@example.com' && !key.endsWith('@example.com')) {
-          delete sessions[key];
-          localStorage.setItem(STORAGE_SESSIONS_KEY, JSON.stringify(sessions));
-        }
-      }
-      return sessions;
+      return sessions || {};
     } catch {
       return {};
     }
@@ -84,8 +78,7 @@ class LocalStoreManager {
     }
     try {
       const users: User[] = JSON.parse(raw);
-      const valid = users.filter(u => u.email === 'tejasranjansingh007@gmail.com' || u.email === 'joe@example.com');
-      if (valid.length > 0) return valid;
+      if (Array.isArray(users) && users.length > 0) return users;
       localStorage.setItem(STORAGE_USERS_KEY, JSON.stringify(INITIAL_USERS));
       return INITIAL_USERS;
     } catch {
@@ -188,10 +181,6 @@ export class ApiService {
     if (!raw) return null;
     try {
       const user = JSON.parse(raw);
-      if (user && user.email && user.email !== 'tejasranjansingh007@gmail.com' && user.email !== 'joe@example.com') {
-        user.email = 'tejasranjansingh007@gmail.com';
-        localStorage.setItem(STORAGE_CURRENT_USER_KEY, JSON.stringify(user));
-      }
       return user;
     } catch {
       return null;
@@ -294,10 +283,15 @@ export class ApiService {
         // Fetch user profile from user service
         const users = await this.getUsers();
         const matched = users.find(u => u.email.toLowerCase() === trimmedUser.toLowerCase() || u.username === trimmedUser);
+        const namePart = trimmedUser.split('@')[0];
+        const parts = namePart.split(/[._-]/);
+        const autoFirst = parts[0] ? parts[0].charAt(0).toUpperCase() + parts[0].slice(1) : 'Customer';
+        const autoLast = parts[1] ? parts[1].charAt(0).toUpperCase() + parts[1].slice(1) : '';
+
         const user: User = matched || {
           id: isAdminLogin ? 'admin_keycloak_01' : `usr_${Date.now()}`,
-          firstName: isAdminLogin ? 'Admin' : trimmedUser.split('@')[0],
-          lastName: isAdminLogin ? 'Operator' : '',
+          firstName: isAdminLogin ? 'Admin' : autoFirst,
+          lastName: isAdminLogin ? 'Operator' : autoLast,
           email: trimmedUser.includes('@') ? trimmedUser : `${trimmedUser}@shopsphere.io`,
           phone: '+91 9876543210',
           role: isAdminLogin ? 'ADMIN' : 'CUSTOMER',
@@ -328,7 +322,7 @@ export class ApiService {
       // Keycloak unavailable or timed out; smoothly continue to internal auth
     }
 
-    // 2. Internal / Sandbox Auth matching registered users
+    // 2. Customer profile credentials authentication
     // Strict credential verification
     if (isAdminLogin) {
       if (password !== 'admin' && password !== 'admin123' && password !== 'Password@123') {
@@ -372,10 +366,15 @@ export class ApiService {
       };
     } else if (!matchedUser) {
       // Create new customer profile on the fly
+      const namePart = trimmedUser.split('@')[0];
+      const parts = namePart.split(/[._-]/);
+      const autoFirst = parts[0] ? parts[0].charAt(0).toUpperCase() + parts[0].slice(1) : 'Customer';
+      const autoLast = parts[1] ? parts[1].charAt(0).toUpperCase() + parts[1].slice(1) : '';
+
       matchedUser = {
         id: '67d533476a55cf5c8124a59c',
-        firstName: trimmedUser.split('@')[0] || 'Customer',
-        lastName: '',
+        firstName: autoFirst,
+        lastName: autoLast,
         email: trimmedUser.includes('@') ? trimmedUser : `${trimmedUser}@example.com`,
         phone: '+91 9876543210',
         role: 'CUSTOMER',
@@ -760,7 +759,7 @@ export class ApiService {
 
   static async addToCart(userId: string, productId: string, quantity: number): Promise<boolean> {
     const effectiveUserId = userId || 'guest';
-    const backendUserId = '67d533476a55cf5c8124a59c';
+    const backendUserId = (userId && userId.length === 24) ? userId : '67d533476a55cf5c8124a59c';
 
     // 1. Always update local cart state first
     const current = LocalStoreManager.getCart(effectiveUserId);
@@ -795,7 +794,7 @@ export class ApiService {
 
   static async removeFromCart(userId: string, productId: string): Promise<boolean> {
     const effectiveUserId = userId || 'guest';
-    const backendUserId = '67d533476a55cf5c8124a59c';
+    const backendUserId = (userId && userId.length === 24) ? userId : '67d533476a55cf5c8124a59c';
     const current = LocalStoreManager.getCart(effectiveUserId);
     const filtered = current.filter(i => String(i.productId) !== String(productId));
     LocalStoreManager.saveCart(effectiveUserId, filtered);
@@ -844,19 +843,23 @@ export class ApiService {
     }
   ): Promise<Order> {
     const effectiveUserId = userId || 'guest';
-    const backendUserId = '67d533476a55cf5c8124a59c';
+    const backendUserId = (user?.id && user.id.length === 24)
+      ? user.id
+      : ((userId && userId.length === 24) ? userId : '67d533476a55cf5c8124a59c');
 
     if (this.mode === 'live') {
       // 1. Synchronize user details with MongoDB User Service so Notification Service sends email to this exact address
-      const targetEmail = user?.email || 'tejasranjansingh007@gmail.com';
-      const targetName = user ? `${user.firstName} ${user.lastName}`.trim() : 'Tejas Ranjan';
+      const targetEmail = user?.email?.trim() || 'customer@shopsphere.io';
+      const userFirst = (user?.firstName || '').trim();
+      const userLast = (user?.lastName || '').trim();
+      const targetName = [userFirst, userLast].filter(Boolean).join(' ') || (user?.email?.split('@')[0] || 'Customer');
       try {
         await fetch(`/api/users/${backendUserId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            firstName: user?.firstName || 'Tejas',
-            lastName: user?.lastName || 'Ranjan',
+            firstName: userFirst || targetName,
+            lastName: userLast,
             email: targetEmail,
             phone: user?.phone || '+91 9876543210',
           }),
@@ -865,20 +868,28 @@ export class ApiService {
         console.warn('User MongoDB sync warning:', syncErr);
       }
 
-      // 2. Ensure all cart items are synced into live order-service cart
-      const passedItems = options?.items || [];
-      const userLocalItems = LocalStoreManager.getCart(effectiveUserId);
-      const guestLocalItems = LocalStoreManager.getCart('guest');
-      const allCandidateItems = [...passedItems, ...userLocalItems, ...guestLocalItems];
+      // 2. Synchronize live order-service cart with exact items being checked out
+      // Clear backend cart first to prevent quantity duplication/accumulation (e.g., 2 becoming 4)
+      try {
+        await fetch('/api/cart', {
+          method: 'DELETE',
+          headers: {
+            'X-User-ID': backendUserId,
+          },
+        });
+      } catch (clearErr) {
+        console.warn('Live cart clear warning:', clearErr);
+      }
 
-      // Deduplicate items by productId
+      // Use the exact checkout items
+      const passedItems = (options?.items && options.items.length > 0)
+        ? options.items
+        : LocalStoreManager.getCart(effectiveUserId);
+
       const itemsMap = new Map<string, { productId: string; quantity: number }>();
-      for (const item of allCandidateItems) {
+      for (const item of passedItems) {
         const pid = String(item.productId);
-        if (itemsMap.has(pid)) {
-          const prev = itemsMap.get(pid)!;
-          prev.quantity = Math.max(prev.quantity, item.quantity);
-        } else {
+        if (item.quantity > 0) {
           itemsMap.set(pid, { productId: pid, quantity: item.quantity });
         }
       }
@@ -898,6 +909,11 @@ export class ApiService {
         }
       }
 
+      const discountAmount = options?.discountAmount || 0;
+      const couponCode = options?.couponCode || '';
+      const shippingCharge = options?.shippingCharge !== undefined ? options.shippingCharge : 0;
+      const finalAmount = options?.finalAmount;
+
       // 3. Post order to Order Service (triggers Kafka order.exchange -> Notification Service -> Gmail confirmation)
       const res = await fetch('/api/orders', {
         method: 'POST',
@@ -905,6 +921,14 @@ export class ApiService {
           'Content-Type': 'application/json',
           'X-User-ID': backendUserId,
         },
+        body: JSON.stringify({
+          discountAmount,
+          couponCode,
+          shippingCharge,
+          finalAmount,
+          customerName: targetName,
+          customerEmail: targetEmail,
+        }),
       });
 
       if (!res.ok) {
@@ -913,22 +937,25 @@ export class ApiService {
       }
 
       const liveOrder = await res.json();
-      const subTotal = Number(liveOrder.totalAmount) || 0;
-      const discountAmount = options?.discountAmount || 0;
-      const shippingCharge = options?.shippingCharge !== undefined
-        ? options.shippingCharge
-        : (subTotal >= 499 ? 0 : 49);
-      const finalAmount = options?.finalAmount !== undefined
-        ? options.finalAmount
-        : Math.max(0, subTotal - discountAmount) + shippingCharge;
+      const calculatedSubTotal = liveOrder.subTotalAmount !== undefined
+        ? Number(liveOrder.subTotalAmount)
+        : (Number(liveOrder.totalAmount) || 0);
+      const orderDiscount = liveOrder.discountAmount !== undefined
+        ? Number(liveOrder.discountAmount)
+        : discountAmount;
+      const orderCoupon = liveOrder.couponCode || couponCode;
+      const orderShipping = liveOrder.shippingCharge !== undefined
+        ? Number(liveOrder.shippingCharge)
+        : (calculatedSubTotal >= 499 ? 0 : 49);
+      const orderTotal = Math.max(0, calculatedSubTotal - orderDiscount) + orderShipping;
 
       const completeOrder: Order = {
         ...liveOrder,
-        subTotal,
-        totalAmount: finalAmount,
-        discountAmount,
-        couponCode: options?.couponCode || '',
-        shippingCharge,
+        subTotal: calculatedSubTotal,
+        totalAmount: orderTotal,
+        discountAmount: orderDiscount,
+        couponCode: orderCoupon,
+        shippingCharge: orderShipping,
         userName: targetName,
         userEmail: targetEmail,
       };
@@ -964,14 +991,12 @@ export class ApiService {
     const shippingCharge = options?.shippingCharge !== undefined
       ? options.shippingCharge
       : (subTotal >= 499 ? 0 : 49);
-    const finalAmount = options?.finalAmount !== undefined
-      ? options.finalAmount
-      : Math.max(0, subTotal - discountAmount) + shippingCharge;
+    const finalAmount = Math.max(0, subTotal - discountAmount) + shippingCharge;
 
     const order: Order = {
       id: orderId,
       userId: effectiveUserId,
-      userName: user ? `${user.firstName} ${user.lastName}`.trim() : 'Valued Customer',
+      userName: [user?.firstName?.trim(), user?.lastName?.trim()].filter(Boolean).join(' ') || 'Valued Customer',
       userEmail: user?.email || 'customer@example.com',
       subTotal,
       totalAmount: finalAmount,

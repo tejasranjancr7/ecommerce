@@ -37,7 +37,7 @@ export const OrderSuccessModal: React.FC = () => {
         </h2>
 
         <p style={{ color: '#475569', fontSize: '0.9rem', marginBottom: '22px' }}>
-          Thank you, <strong>{currentUser?.firstName || lastOrder?.userName || 'Customer'}</strong>. We've sent a confirmation email with PDF invoice to <strong>{currentUser?.email || lastOrder?.userEmail}</strong>.
+          Thank you, <strong>{[currentUser?.firstName, currentUser?.lastName].filter(Boolean).join(' ') || lastOrder?.userName || 'Customer'}</strong>. We've sent a confirmation email with PDF invoice to <strong>{currentUser?.email || lastOrder?.userEmail}</strong>.
         </p>
 
         {/* Order Details Card */}
@@ -56,7 +56,29 @@ export const OrderSuccessModal: React.FC = () => {
 
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.85rem' }}>
             <span style={{ color: '#64748B' }}>Items Purchased:</span>
-            <span style={{ fontWeight: 600 }}>{lastOrder.items.length} item(s)</span>
+            <span style={{ fontWeight: 600 }}>
+              {lastOrder.items.reduce((sum, i) => sum + i.quantity, 0)} unit(s) ({lastOrder.items.length} item{lastOrder.items.length > 1 ? 's' : ''})
+            </span>
+          </div>
+
+          <div style={{
+            margin: '8px 0 12px',
+            padding: '8px 12px',
+            background: '#FFFFFF',
+            border: '1px solid #E2E8F0',
+            borderRadius: '6px',
+            fontSize: '0.82rem',
+          }}>
+            {lastOrder.items.map((item, idx) => (
+              <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0' }}>
+                <span style={{ color: '#334155' }}>
+                  {item.productName || `Product #${item.productId}`} <strong style={{ color: '#1769D2' }}>× {item.quantity}</strong>
+                </span>
+                <span style={{ fontWeight: 600, color: '#0F172A' }}>
+                  ₹{(item.subTotal || item.price * item.quantity).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+            ))}
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.85rem' }}>
@@ -75,10 +97,7 @@ export const OrderSuccessModal: React.FC = () => {
               ? lastOrder.shippingCharge
               : (isFreeDelivery ? 0 : 49);
             const couponDiscountAmount = lastOrder.discountAmount || 0;
-            const calculatedGrandTotal = Math.max(0, subTotalAmount - couponDiscountAmount) + shippingAmount;
-            const grandTotalAmount = (lastOrder.totalAmount && (lastOrder.shippingCharge !== undefined || lastOrder.subTotal !== undefined))
-              ? lastOrder.totalAmount
-              : calculatedGrandTotal;
+            const grandTotalAmount = Math.max(0, subTotalAmount - couponDiscountAmount) + shippingAmount;
 
             return (
               <>

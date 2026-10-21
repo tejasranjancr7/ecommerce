@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.List;
+import com.ecommerce.order.dtos.CreateOrderRequest;
 import com.ecommerce.order.clients.ProductServiceClient;
 import com.ecommerce.order.dtos.ProductResponse;
 import java.util.ArrayList;
@@ -34,6 +35,10 @@ public class OrderService {
     private final ProductServiceClient productServiceClient;
 
     public Optional<OrderResponse> createOrder(String userId) {
+        return createOrder(userId, null);
+    }
+
+    public Optional<OrderResponse> createOrder(String userId, CreateOrderRequest request) {
         // Validate cart is not empty
         List<CartItem> cartItems = cartService.getCart(userId);
         if (cartItems.isEmpty()) {
@@ -43,16 +48,39 @@ public class OrderService {
         // Fetch user details (for email notification)
         UserResponse user = userServiceClient.getUserDetails(userId);
 
-        // Calculate total price
-        BigDecimal totalPrice = cartItems.stream()
+        // Calculate item subtotal
+        BigDecimal subTotal = cartItems.stream()
                 .map(item -> item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal discountAmount = (request != null && request.getDiscountAmount() != null)
+                ? request.getDiscountAmount()
+                : BigDecimal.ZERO;
+
+        String couponCode = (request != null && request.getCouponCode() != null)
+                ? request.getCouponCode()
+                : "";
+
+        BigDecimal shippingCharge;
+        if (subTotal.compareTo(BigDecimal.valueOf(499)) >= 0 || subTotal.compareTo(BigDecimal.ZERO) == 0) {
+            shippingCharge = BigDecimal.ZERO;
+        } else if (request != null && request.getShippingCharge() != null) {
+            shippingCharge = request.getShippingCharge();
+        } else {
+            shippingCharge = BigDecimal.valueOf(49);
+        }
+
+        BigDecimal finalAmount = subTotal.subtract(discountAmount).max(BigDecimal.ZERO).add(shippingCharge);
 
         // Create order
         Order order = new Order();
         order.setUserId(userId);
         order.setStatus(OrderStatus.CONFIRMED);
-        order.setTotalAmount(totalPrice);
+        order.setSubTotalAmount(subTotal);
+        order.setDiscountAmount(discountAmount);
+        order.setCouponCode(couponCode);
+        order.setShippingCharge(shippingCharge);
+        order.setTotalAmount(finalAmount);
 
         List<OrderItem> orderItems = cartItems.stream()
                 .map(item -> new OrderItem(
@@ -71,10 +99,22 @@ public class OrderService {
         cartService.clearCart(userId);
 
         // Build and publish OrderCreatedEvent with user email + name
-        String userEmail = (user != null) ? user.getEmail() : "";
-        String userName  = (user != null && user.getFirstName() != null)
-                ? (user.getFirstName() + (user.getLastName() != null ? " " + user.getLastName() : "")).trim()
-                : "Customer";
+        String userEmail;
+        if (request != null && request.getCustomerEmail() != null && !request.getCustomerEmail().isBlank()) {
+            userEmail = request.getCustomerEmail().trim();
+        } else {
+            userEmail = (user != null && user.getEmail() != null) ? user.getEmail() : "";
+        }
+
+        String userName;
+        if (request != null && request.getCustomerName() != null && !request.getCustomerName().isBlank()) {
+            userName = request.getCustomerName().trim();
+        } else if (user != null && user.getFirstName() != null && !user.getFirstName().isBlank()) {
+            String last = (user.getLastName() != null && !user.getLastName().isBlank()) ? " " + user.getLastName().trim() : "";
+            userName = (user.getFirstName().trim() + last).trim();
+        } else {
+            userName = "Customer";
+        }
 
         List<OrderItemDTO> orderItemDTOs = mapToOrderItemDTOs(savedOrder.getItems());
 
@@ -85,20 +125,19 @@ public class OrderService {
                 userName,
                 savedOrder.getStatus(),
                 orderItemDTOs,
+                savedOrder.getSubTotalAmount(),
+                savedOrder.getDiscountAmount(),
+                savedOrder.getCouponCode(),
+                savedOrder.getShippingCharge(),
                 savedOrder.getTotalAmount(),
                 savedOrder.getCreatedAt()
         );
 
-        log.info("Publishing OrderCreatedEvent for order: {} to user: {} ({})", savedOrder.getId(), userName, userEmail);
+        log.info("Publishing OrderCreatedEvent for order: {} to user: {} ({}) with subTotal: {}, discount: {}, total: {}",
+                savedOrder.getId(), userName, userEmail, savedOrder.getSubTotalAmount(), savedOrder.getDiscountAmount(), savedOrder.getTotalAmount());
         streamBridge.send("createOrder-out-0", event);
 
-        return Optional.of(new OrderResponse(
-                savedOrder.getId(),
-                savedOrder.getTotalAmount(),
-                savedOrder.getStatus(),
-                orderItemDTOs,
-                savedOrder.getCreatedAt()
-        ));
+        return Optional.of(mapToOrderResponse(savedOrder));
     }
 
     private List<OrderItemDTO> mapToOrderItemDTOs(List<OrderItem> items) {
@@ -130,6 +169,10 @@ public class OrderService {
     private OrderResponse mapToOrderResponse(Order order) {
         return new OrderResponse(
                 order.getId(),
+                order.getSubTotalAmount(),
+                order.getDiscountAmount(),
+                order.getCouponCode(),
+                order.getShippingCharge(),
                 order.getTotalAmount(),
                 order.getStatus(),
                 mapToOrderItemDTOs(order.getItems()),

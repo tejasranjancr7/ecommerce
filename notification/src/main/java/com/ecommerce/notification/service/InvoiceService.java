@@ -97,25 +97,49 @@ public class InvoiceService {
             
             document.add(table);
             
-            // Subtotal, Shipping & Total Amount
-            BigDecimal subTotalAmount = (calculatedTotal.compareTo(BigDecimal.ZERO) > 0)
-                    ? calculatedTotal
-                    : (event.getTotalAmount() != null ? event.getTotalAmount() : BigDecimal.ZERO);
-            boolean isFreeShipping = subTotalAmount.compareTo(BigDecimal.valueOf(499)) >= 0 || subTotalAmount.compareTo(BigDecimal.ZERO) == 0;
-            BigDecimal shippingFee = isFreeShipping ? BigDecimal.ZERO : BigDecimal.valueOf(49);
-            BigDecimal grandTotal = subTotalAmount.add(shippingFee);
+            // Subtotal, Discount, Shipping & Total Amount
+            BigDecimal subTotalAmount = (event.getSubTotalAmount() != null && event.getSubTotalAmount().compareTo(BigDecimal.ZERO) > 0)
+                    ? event.getSubTotalAmount()
+                    : ((calculatedTotal.compareTo(BigDecimal.ZERO) > 0)
+                        ? calculatedTotal
+                        : (event.getTotalAmount() != null ? event.getTotalAmount() : BigDecimal.ZERO));
 
-            Paragraph subtotalPara = new Paragraph("Subtotal: INR " + subTotalAmount, normalFont);
+            BigDecimal discountAmount = (event.getDiscountAmount() != null)
+                    ? event.getDiscountAmount()
+                    : BigDecimal.ZERO;
+
+            boolean isFreeShipping;
+            BigDecimal shippingFee;
+            if (event.getShippingCharge() != null) {
+                shippingFee = event.getShippingCharge();
+                isFreeShipping = shippingFee.compareTo(BigDecimal.ZERO) == 0;
+            } else {
+                isFreeShipping = subTotalAmount.compareTo(BigDecimal.valueOf(499)) >= 0 || subTotalAmount.compareTo(BigDecimal.ZERO) == 0;
+                shippingFee = isFreeShipping ? BigDecimal.ZERO : BigDecimal.valueOf(49);
+            }
+
+            BigDecimal grandTotal = subTotalAmount.subtract(discountAmount).max(BigDecimal.ZERO).add(shippingFee);
+
+            Paragraph subtotalPara = new Paragraph("Subtotal: INR " + String.format("%.2f", subTotalAmount), normalFont);
             subtotalPara.setAlignment(Paragraph.ALIGN_RIGHT);
             subtotalPara.setSpacingBefore(15);
             document.add(subtotalPara);
 
-            String shippingText = isFreeShipping ? "Shipping: FREE (Orders >= INR 499)" : "Shipping: INR 49.00";
+            if (discountAmount.compareTo(BigDecimal.ZERO) > 0) {
+                String couponLabel = (event.getCouponCode() != null && !event.getCouponCode().isBlank())
+                        ? "Coupon Discount (" + event.getCouponCode() + "): -INR " + String.format("%.2f", discountAmount)
+                        : "Coupon Discount: -INR " + String.format("%.2f", discountAmount);
+                Paragraph discountPara = new Paragraph(couponLabel, normalFont);
+                discountPara.setAlignment(Paragraph.ALIGN_RIGHT);
+                document.add(discountPara);
+            }
+
+            String shippingText = isFreeShipping ? "Shipping: FREE (Orders >= INR 499)" : "Shipping: INR " + String.format("%.2f", shippingFee);
             Paragraph shippingPara = new Paragraph(shippingText, normalFont);
             shippingPara.setAlignment(Paragraph.ALIGN_RIGHT);
             document.add(shippingPara);
 
-            Paragraph total = new Paragraph("Total Amount: INR " + grandTotal, headerFont);
+            Paragraph total = new Paragraph("Total Amount: INR " + String.format("%.2f", grandTotal), headerFont);
             total.setAlignment(Paragraph.ALIGN_RIGHT);
             total.setSpacingBefore(5);
             document.add(total);

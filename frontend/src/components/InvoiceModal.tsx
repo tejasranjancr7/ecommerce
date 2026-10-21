@@ -187,7 +187,7 @@ export const InvoiceModal: React.FC = () => {
                     ₹{item.price.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </td>
                   <td style={{ padding: '12px', textAlign: 'right', fontSize: '0.9rem', fontWeight: 700, fontFamily: 'JetBrains Mono, monospace', color: '#0f172a' }}>
-                    ₹{item.subTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    ₹{(item.subTotal !== undefined ? item.subTotal : item.price * item.quantity).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </td>
                 </tr>
               ))}
@@ -206,10 +206,7 @@ export const InvoiceModal: React.FC = () => {
               ? viewInvoiceOrder.shippingCharge
               : (isFreeDelivery ? 0 : 49);
             const couponDiscountAmount = viewInvoiceOrder.discountAmount || 0;
-            const calculatedGrandTotal = Math.max(0, subTotalAmount - couponDiscountAmount) + shippingAmount;
-            const grandTotalAmount = (viewInvoiceOrder.totalAmount && (viewInvoiceOrder.shippingCharge !== undefined || viewInvoiceOrder.subTotal !== undefined))
-              ? viewInvoiceOrder.totalAmount
-              : calculatedGrandTotal;
+            const grandTotalAmount = Math.max(0, subTotalAmount - couponDiscountAmount) + shippingAmount;
 
             return (
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '32px' }}>

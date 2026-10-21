@@ -19,6 +19,10 @@ public class OrderCreatedEvent {
     private String userName;
     private OrderStatus status;
     private List<OrderItemDTO> items;
+    private BigDecimal subTotalAmount;
+    private BigDecimal discountAmount;
+    private String couponCode;
+    private BigDecimal shippingCharge;
     private BigDecimal totalAmount;
     private LocalDateTime createdAt;
 }

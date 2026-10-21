@@ -114,8 +114,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     ApiService.getSavedUser() ? null : 'login'
   );
 
-  const [backendMode, setBackendMode] = useState<BackendMode>(ApiService.getMode());
-  const [isBackendLive, setIsBackendLive] = useState<boolean>(false);
+  const backendMode: BackendMode = 'live';
+  const [isBackendLive, setIsBackendLive] = useState<boolean>(true);
 
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
@@ -137,17 +137,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   const toggleBackendMode = useCallback(() => {
-    const nextMode: BackendMode = backendMode === 'live' ? 'mock' : 'live';
-    setBackendMode(nextMode);
-    ApiService.setMode(nextMode);
     showToast(
       'info',
-      `Switched to ${nextMode.toUpperCase()} Mode`,
-      nextMode === 'live'
-        ? 'Communicating with Spring Cloud Gateway at http://localhost:8080'
-        : 'Running in Local Sandbox mode with full state simulation'
+      'Live Mode Active',
+      'Communicating directly with Spring Cloud Gateway at http://localhost:8080 and backend microservices.'
     );
-  }, [backendMode, showToast]);
+  }, [showToast]);
 
   const refreshProducts = useCallback(async () => {
     setIsLoading(true);

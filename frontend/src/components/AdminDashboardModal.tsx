@@ -26,8 +26,6 @@ export const AdminDashboardModal: React.FC = () => {
     updateProduct,
     deleteProduct,
     users,
-    backendMode,
-    toggleBackendMode,
   } = useStore();
 
   const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'users' | 'system'>('orders');
@@ -693,7 +691,7 @@ export const AdminDashboardModal: React.FC = () => {
                 </p>
               </div>
 
-              {/* Mode switch card */}
+              {/* Mode card */}
               <div style={{
                 background: '#F8FAFC',
                 border: '1px solid #E2E8F0',
@@ -704,20 +702,31 @@ export const AdminDashboardModal: React.FC = () => {
                 justifyContent: 'space-between',
               }}>
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#111827' }}>
-                    Active Backend Communication Mode
+                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#111827', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span>Active Backend Communication</span>
+                    <span className="badge badge-green">LIVE ONLY</span>
                   </div>
-                  <div style={{ fontSize: '0.78rem', color: '#64748B', marginTop: '2px' }}>
-                    Current Mode: <strong>{backendMode.toUpperCase()}</strong> ({backendMode === 'live' ? 'Direct routing via Spring Gateway :8080' : 'In-memory sandbox simulation'})
+                  <div style={{ fontSize: '0.78rem', color: '#64748B', marginTop: '4px' }}>
+                    Direct reactive routing via Spring Cloud Gateway (:8080) to containerized microservices and Kafka event brokers
                   </div>
                 </div>
-                <button
-                  onClick={toggleBackendMode}
-                  className="btn btn-secondary"
-                  style={{ fontSize: '0.8rem', padding: '8px 14px', fontWeight: 700 }}
-                >
-                  Switch to {backendMode === 'live' ? 'MOCK' : 'LIVE'} Mode
-                </button>
+                <div>
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    background: '#DEF7EC',
+                    color: '#03543F',
+                    border: '1px solid #31C48D',
+                    borderRadius: '6px',
+                    padding: '6px 12px',
+                    fontSize: '0.8rem',
+                    fontWeight: 700,
+                  }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#0E9F6E' }} />
+                    LIVE PRODUCTION MODE
+                  </span>
+                </div>
               </div>
 
               {/* Services Health Grid */}

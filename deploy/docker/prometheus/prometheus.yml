@@ -1,22 +1,32 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
 scrape_configs:
-  - job_name: 'product-service'
+  - job_name: 'gateway'
     metrics_path: '/actuator/prometheus'
-    scrape_interval: 3s
     static_configs:
-      - targets: ['host.docker.internal:8081']
+      - targets: ['gateway:8080']
         labels:
-          application: 'product-service'
-  - job_name: 'user-service'
-    metrics_path: '/actuator/prometheus'
-    scrape_interval: 3s
-    static_configs:
-      - targets: ['host.docker.internal:8082']
-        labels:
-          application: 'user-service'
+          application: 'gateway'
+
   - job_name: 'order-service'
     metrics_path: '/actuator/prometheus'
-    scrape_interval: 3s
     static_configs:
-      - targets: ['host.docker.internal:8083']
+      - targets: ['order-service:8083']
         labels:
           application: 'order-service'
+
+  - job_name: 'product-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['product-service:8081']
+        labels:
+          application: 'product-service'
+
+  - job_name: 'user-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['user-service:8082']
+        labels:
+          application: 'user-service'

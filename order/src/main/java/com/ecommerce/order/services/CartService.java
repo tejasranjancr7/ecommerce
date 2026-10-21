@@ -44,18 +44,23 @@ public class CartService {
 
         CartItem existingCartItem = cartItemRepository.findByUserIdAndProductId(userId, request.getProductId());
         if (existingCartItem != null) {
-            // Update the quantity
-            existingCartItem.setQuantity(existingCartItem.getQuantity() + request.getQuantity());
-            existingCartItem.setPrice(itemPrice);
-            cartItemRepository.save(existingCartItem);
+            int newQuantity = existingCartItem.getQuantity() + request.getQuantity();
+            if (newQuantity <= 0) {
+                cartItemRepository.delete(existingCartItem);
+            } else {
+                existingCartItem.setQuantity(newQuantity);
+                existingCartItem.setPrice(itemPrice);
+                cartItemRepository.save(existingCartItem);
+            }
         } else {
-            // Create new cart item
-           CartItem cartItem = new CartItem();
-           cartItem.setUserId(userId);
-           cartItem.setProductId(request.getProductId());
-           cartItem.setQuantity(request.getQuantity());
-           cartItem.setPrice(itemPrice);
-           cartItemRepository.save(cartItem);
+            if (request.getQuantity() > 0) {
+                CartItem cartItem = new CartItem();
+                cartItem.setUserId(userId);
+                cartItem.setProductId(request.getProductId());
+                cartItem.setQuantity(request.getQuantity());
+                cartItem.setPrice(itemPrice);
+                cartItemRepository.save(cartItem);
+            }
         }
         return true;
     }

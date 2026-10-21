@@ -97,15 +97,44 @@ public class EmailService {
             }
         }
 
-        BigDecimal subTotalAmount = (calculatedTotal.compareTo(BigDecimal.ZERO) > 0)
-                ? calculatedTotal
-                : (event.getTotalAmount() != null ? event.getTotalAmount() : BigDecimal.ZERO);
-        boolean isFreeShipping = subTotalAmount.compareTo(BigDecimal.valueOf(499)) >= 0 || subTotalAmount.compareTo(BigDecimal.ZERO) == 0;
-        BigDecimal shippingFee = isFreeShipping ? BigDecimal.ZERO : BigDecimal.valueOf(49);
-        BigDecimal grandTotal = subTotalAmount.add(shippingFee);
+        BigDecimal subTotalAmount = (event.getSubTotalAmount() != null && event.getSubTotalAmount().compareTo(BigDecimal.ZERO) > 0)
+                ? event.getSubTotalAmount()
+                : ((calculatedTotal.compareTo(BigDecimal.ZERO) > 0)
+                    ? calculatedTotal
+                    : (event.getTotalAmount() != null ? event.getTotalAmount() : BigDecimal.ZERO));
+
+        BigDecimal discountAmount = (event.getDiscountAmount() != null)
+                ? event.getDiscountAmount()
+                : BigDecimal.ZERO;
+
+        boolean isFreeShipping;
+        BigDecimal shippingFee;
+        if (event.getShippingCharge() != null) {
+            shippingFee = event.getShippingCharge();
+            isFreeShipping = shippingFee.compareTo(BigDecimal.ZERO) == 0;
+        } else {
+            isFreeShipping = subTotalAmount.compareTo(BigDecimal.valueOf(499)) >= 0 || subTotalAmount.compareTo(BigDecimal.ZERO) == 0;
+            shippingFee = isFreeShipping ? BigDecimal.ZERO : BigDecimal.valueOf(49);
+        }
+
+        BigDecimal grandTotal = subTotalAmount.subtract(discountAmount).max(BigDecimal.ZERO).add(shippingFee);
+
         String shippingDisplay = isFreeShipping
                 ? "<span style=\"color:#16a34a; font-weight:600;\">FREE</span>"
-                : "<span style=\"color:#b45309; font-weight:700;\">₹49.00</span>";
+                : "<span style=\"color:#b45309; font-weight:700;\">₹" + String.format("%.2f", shippingFee) + "</span>";
+
+        String couponRow = "";
+        if (discountAmount.compareTo(BigDecimal.ZERO) > 0) {
+            String couponLabel = (event.getCouponCode() != null && !event.getCouponCode().isBlank())
+                    ? "Coupon Discount (" + event.getCouponCode() + ")"
+                    : "Coupon Discount";
+            couponRow = """
+                    <tr>
+                        <td style="color:#16a34a; font-size:14px; font-weight:600; padding-bottom:8px;">%s</td>
+                        <td style="color:#16a34a; font-size:14px; font-weight:600; text-align:right; padding-bottom:8px;">-₹%.2f</td>
+                    </tr>
+                    """.formatted(couponLabel, discountAmount);
+        }
 
         return """
                 <!DOCTYPE html>
@@ -228,6 +257,7 @@ public class EmailService {
                                                             <td style="color:#6b7280; font-size:14px; padding-bottom:8px;">Subtotal</td>
                                                             <td style="color:#374151; font-size:14px; text-align:right; padding-bottom:8px;">₹%.2f</td>
                                                         </tr>
+                                                        %s
                                                         <tr>
                                                             <td style="color:#6b7280; font-size:14px; padding-bottom:8px;">Shipping</td>
                                                             <td style="font-size:14px; text-align:right; padding-bottom:8px;">%s</td>
@@ -271,6 +301,7 @@ public class EmailService {
                 customerEmail,
                 itemRows.toString(),
                 subTotalAmount,
+                couponRow,
                 shippingDisplay,
                 grandTotal
         );

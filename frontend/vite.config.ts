@@ -8,23 +8,23 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api/products': {
-        target: 'http://localhost:8081',
+        target: 'http://127.0.0.1:8081',
         changeOrigin: true,
       },
       '/api/cart': {
-        target: 'http://localhost:8083',
+        target: 'http://127.0.0.1:8083',
         changeOrigin: true,
       },
       '/api/orders': {
-        target: 'http://localhost:8083',
+        target: 'http://127.0.0.1:8083',
         changeOrigin: true,
       },
       '/api/users': {
-        target: 'http://localhost:8082',
+        target: 'http://127.0.0.1:8082',
         changeOrigin: true,
       },
       '/realms': {
-        target: 'http://localhost:8443',
+        target: 'http://127.0.0.1:8443',
         changeOrigin: true,
       },
     },

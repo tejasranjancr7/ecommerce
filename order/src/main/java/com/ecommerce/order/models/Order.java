@@ -21,6 +21,14 @@ public class Order {
 
     private String userId;
 
+    private BigDecimal subTotalAmount;
+
+    private BigDecimal discountAmount;
+
+    private String couponCode;
+
+    private BigDecimal shippingCharge;
+
     private BigDecimal totalAmount;
 
     @Enumerated(EnumType.STRING)

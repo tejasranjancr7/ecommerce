@@ -262,7 +262,7 @@ export const Navbar: React.FC = () => {
                         </span>
                       </div>
                       <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>
-                        {currentUser.firstName} {currentUser.lastName}
+                        {[currentUser.firstName, currentUser.lastName].filter(Boolean).join(' ') || 'Customer'}
                       </div>
                       <div style={{ fontSize: '0.76rem', color: '#64748B', wordBreak: 'break-all' }}>
                         {currentUser.email}

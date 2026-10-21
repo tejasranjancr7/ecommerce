@@ -193,7 +193,7 @@ export const UserProfileModal: React.FC = () => {
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#111827' }}>
-                  {currentUser.firstName} {currentUser.lastName}
+                  {[currentUser.firstName, currentUser.lastName].filter(Boolean).join(' ') || 'Customer'}
                 </span>
                 <span style={{
                   fontSize: '0.7rem',
@@ -287,7 +287,7 @@ export const UserProfileModal: React.FC = () => {
                   <MapPin size={20} color="#EA580C" style={{ marginTop: '2px', flexShrink: 0 }} />
                   <div>
                     <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#111827' }}>
-                      {currentUser.firstName} {currentUser.lastName}
+                      {[currentUser.firstName, currentUser.lastName].filter(Boolean).join(' ') || 'Customer'}
                     </div>
                     <div style={{ fontSize: '0.84rem', color: '#334155', marginTop: '2px' }}>
                       {currentUser.address?.street || '123 Market Street, Indiranagar'}

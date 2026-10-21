@@ -45,12 +45,13 @@ A modern, scalable, and event-driven eCommerce backend built with **Java 21**, *
 * **RabbitMQ:** Message broker for Spring Cloud Bus refresh events
 
 ### Security & Observability
-* **Keycloak 26.2:** OAuth2 / OpenID Connect authentication server
+* **Keycloak 26.2:** OAuth2 / OpenID Connect authentication server (port 8443)
 * **Spring Security:** OAuth2 Resource Server JWT validation
 * **Zipkin:** Distributed request tracing (port 9411)
-* **Prometheus:** Metrics collection and scraping (port 9090)
-* **Grafana:** Observability & log visualization dashboards (port 3000)
-* **Loki + Alloy:** Centralized log shipping and aggregation (port 3100)
+* **Prometheus:** Metrics collection and scraping from Spring Boot Actuator (port 9090)
+* **Loki (Single-Binary):** Lightweight log aggregation engine with local filesystem storage (port 3100)
+* **Promtail:** Docker container log collector and shipper
+* **Grafana:** Observability, metrics visualization & live log search dashboard (port 3001)
 
 ---
 
@@ -157,10 +158,10 @@ docker compose up -d --build
 ```
 
 Docker will launch:
-1. **Infrastructure**: PostgreSQL, MongoDB, RabbitMQ, ZooKeeper, Kafka, Keycloak, Redis
+1. **Infrastructure**: PostgreSQL, MongoDB, RabbitMQ, ZooKeeper, Kafka, Keycloak
 2. **Spring Core**: Eureka, Config Server
 3. **Application Microservices**: API Gateway, Product Service, User Service, Order Service, Notification Service
-4. **Monitoring**: Prometheus, Grafana, Loki, Alloy, MinIO
+4. **Lightweight Monitoring**: Prometheus (port 9090), Loki (port 3100), Promtail, Grafana (port 3001)
 
 ---
 
@@ -349,18 +350,21 @@ Import it into Postman to test all endpoints through the API Gateway (`http://lo
 
 ---
 
-## 6. Default Credentials
+## 6. Access URLs & Default Credentials
 
-| Service | Username | Password | Access URL |
-|---|---|---|---|
-| **Keycloak Admin** | admin | admin | http://localhost:8443 |
-| **RabbitMQ Management** | guest | guest | http://localhost:15672 |
-| **PostgreSQL** | tejas | tejas | localhost:5432 |
-| **pgAdmin** | tejas@pgadmin.org | tejas | http://localhost:5050 |
-| **MinIO Console** | loki | supersecret | http://localhost:9000 |
-| **Grafana** | admin | (Anonymous Auth) | http://localhost:3000 |
-| **Eureka Dashboard** | - | - | http://localhost:8761 |
-| **Zipkin Tracing** | - | - | http://localhost:9411 |
+| Service | Username | Password | Access URL | Purpose |
+|---|---|---|---|---|
+| **Frontend Storefront** | - | - | http://localhost:3000 | React 19 + Vite eCommerce Storefront |
+| **Grafana Dashboard** | admin | admin | http://localhost:3001 | Observability, Metrics & Live Log Search |
+| **Prometheus** | - | - | http://localhost:9090 | Time-series metrics collection & scraping |
+| **Loki Engine** | - | - | http://localhost:3100 | Single-binary log storage API |
+| **Zipkin Tracing** | - | - | http://localhost:9411 | Distributed inter-service request tracing |
+| **Eureka Dashboard** | - | - | http://localhost:8761 | Service Discovery & Registry health |
+| **Keycloak Admin** | admin | admin | http://localhost:8443 | OAuth2 / OpenID Connect Identity Management |
+| **RabbitMQ Management** | guest | guest | http://localhost:15672 | Message broker queue & exchange monitor |
+| **PostgreSQL** | tejas | tejas | localhost:5432 | Relational database (Product & Order services) |
+
+> **Note on Storage Optimization:** The previous 10-container monitoring stack (distributed Loki read/write, MinIO S3 simulation, Alloy, pgAdmin, and mock log generator) was streamlined into a single-binary setup, reclaiming **~11.2 GB** of disk space while keeping 100% of metrics and log search capabilities. The full enterprise monitoring file remains preserved at [`deploy/docker/docker-compose-with-monitoring.yml`](file:///deploy/docker/docker-compose-with-monitoring.yml) for reference.
 
 ---
 
@@ -369,3 +373,39 @@ Import it into Postman to test all endpoints through the API Gateway (`http://lo
 * **Circuit Breaker (Gateway):** Spring Cloud CircuitBreaker wraps route calls. If downstream services fail or time out, fallbacks are triggered to maintain system stability.
 * **Retry Mechanism (Order Service):** The `CartService` is protected with Resilience4j `@Retry`. If inter-service communication to `product-service` or `user-service` encounters transient network errors, it retries before failing gracefully.
 * **Decoupled Asynchronous Notifications:** Order checkout completes instantaneously without waiting for invoice generation or SMTP email transmission; `order-service` emits an event to Kafka, and `notification-service` handles rendering and delivery in the background.
+
+---
+
+## 8. Observability & Log Searching Guide (Grafana & Loki)
+
+With the lightweight monitoring stack running, you can monitor health, metrics, and search logs across all microservices:
+
+### A. Searching Microservice Logs in Grafana
+1. Open **[http://localhost:3001](http://localhost:3001)** and sign in with `admin` / `admin`.
+2. Click **Explore** (the compass icon in the left navigation sidebar).
+3. Select **Loki** from the datasource dropdown at the top.
+4. Run queries using LogQL:
+   * **View all Order Service logs:**
+     ```logql
+     {container="order-service"}
+     ```
+   * **Filter for errors only:**
+     ```logql
+     {container="order-service"} |= "ERROR"
+     ```
+   * **Track order checkout & email events:**
+     ```logql
+     {container="notification-service"} |= "OrderCreatedEvent"
+     ```
+5. Click the **Live** button in the top right corner to stream logs in real time as actions are performed on the frontend.
+
+### B. Viewing Spring Boot Actuator Metrics
+1. Select **Prometheus** from the datasource dropdown in Grafana Explore or Prometheus web UI at **[http://localhost:9090](http://localhost:9090)**.
+2. Popular queries:
+   * **JVM Heap Used:** `jvm_memory_used_bytes{area="heap"}`
+   * **HTTP Request Rates:** `http_server_requests_seconds_count`
+   * **System CPU Usage:** `system_cpu_usage`
+
+### C. Distributed Request Tracing in Zipkin
+Open **[http://localhost:9411](http://localhost:9411)** to trace any request through the entire chain:
+`API Gateway` ➔ `Order Service` ➔ `Kafka Topic` ➔ `Notification Service` with exact millisecond timings for each hop.
